@@ -1,12 +1,10 @@
 #!/bin/bash
 
-# A bot that checks $announcement_room for posts with the :ok_hand: emoji
-# then relays that post to all users via the server announcement api call
-
 admin_user=''
 admin_password=''
 base_url=''
 announcement_room=''
+key_reaction='👌'
 
 authenticate(){
 	checkauth=$(curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' ''"$base_url"'/_matrix/client/r0/admin/whois/'"$admin_user"'' | jq -r .error | cat)
@@ -27,7 +25,7 @@ send_announcement() {
 sandstorm_by_darude() {
 	curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' --header 'Accept: application/json' ''"$base_url"'/_matrix/client/r0/sync' | jq  '.rooms.join.'"$announcement_room"'.timeline' | jq '.events[] | select((.type=="m.room.message") or (.type=="m.reaction")) |  [{sender:.sender,content:.content.body,relation:.content."m.relates_to".event_id,rel_type:.content."m.relates_to".rel_type,key:.content."m.relates_to".key,id:.event_id,age:.unsigned.age}]' | jq '[.[] | . as $a | [keys[] | select($a[.] != null) | {(.): $a[.]}] | add]' | jq -s '.' > sync.json
 	msgcount=0
-	for line in `cat sync.json | jq '.[][] | select((.rel_type=="m.annotation") and (.key=="👌")) | [{"key":.key,"relation":.relation,"id":.id}]' | jq '.[]' | jq -s '.' | jq 'unique_by(.relation) | .[].relation' | sed 's/"//g'`; do
+	for line in `cat sync.json | jq '.[][] | select((.rel_type=="m.annotation") and (.key=="'$key_reaction'")) | [{"key":.key,"relation":.relation,"id":.id}]' | jq '.[]' | jq -s '.' | jq 'unique_by(.relation) | .[].relation' | sed 's/"//g'`; do
 		let "msgcount=msgcount+1"
 		grep -Fxq $line ANNOUNCEMENTLOG
 		if [ $? -eq 1 ]; then
