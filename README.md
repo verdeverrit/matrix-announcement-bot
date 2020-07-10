@@ -13,7 +13,6 @@ Start:  `nohup announcement-bot &`
 
 Stop: `pgrep announcement-bot | xargs kill -9`
 
-If you feel like donating, though I don't know why you would, my bitcoin address is
+If you feel like donating, though I don't know why you would, my bitcoin address is below.
+
 BTC: 1JUqpvNvybHSaSsQEmK6hoH17jFv3VnFMa
-
-
