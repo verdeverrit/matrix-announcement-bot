@@ -2,14 +2,12 @@
 
 This is a bot to monitor a room for messages with a selected reaction, then sends a server notice with the post to all users.
 
-Requires [`jq`](https://stedolan.github.io/jq/)
+Requires [`jq`](https://stedolan.github.io/jq/) and a matrix admin account.
 
 > inb4 this code is trash
 
 I know it is trash, but I missed bin day so I'm putting it here instead.
 This will not be maintained, because it is trash, so go fork yourself.
-
-Requires an admin matrix account.
 
 Start:  `nohup announcement-bot &`
 

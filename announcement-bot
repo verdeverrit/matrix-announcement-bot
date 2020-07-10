@@ -23,6 +23,7 @@ send_announcement() {
 }
 
 sandstorm_by_darude() {
+	authenticate
 	curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' --header 'Accept: application/json' ''"$base_url"'/_matrix/client/r0/sync' | jq  '.rooms.join.'"$announcement_room"'.timeline' | jq '.events[] | select((.type=="m.room.message") or (.type=="m.reaction")) |  [{sender:.sender,content:.content.body,relation:.content."m.relates_to".event_id,rel_type:.content."m.relates_to".rel_type,key:.content."m.relates_to".key,id:.event_id,age:.unsigned.age}]' | jq '[.[] | . as $a | [keys[] | select($a[.] != null) | {(.): $a[.]}] | add]' | jq -s '.' > sync.json
 	msgcount=0
 	for line in `cat sync.json | jq '.[][] | select((.rel_type=="m.annotation") and (.key=="'$key_reaction'")) | [{"key":.key,"relation":.relation,"id":.id}]' | jq '.[]' | jq -s '.' | jq 'unique_by(.relation) | .[].relation' | sed 's/"//g'`; do
@@ -48,7 +49,6 @@ if [ ! -f ANNOUNCEMENTLOG ]; then
 fi
 
 while true; do
-	authenticate
 	sandstorm_by_darude
 	sleep 60
 done
