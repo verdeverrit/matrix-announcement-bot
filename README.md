@@ -9,11 +9,9 @@ This will not be maintained, because it is trash, so go fork yourself.
 
 Requires an admin matrix account.
 
-Setup: `touch ANNOUNCEMENTLOG`
+Start:  `nohup announcement-bot &`
 
-Starting:  `nohup announcement-bot &`
-
-Stopping: `pgrep announcement-bot | xargs kill -9`
+Stop: `pgrep announcement-bot | xargs kill -9`
 
 If you feel like donating, though I don't know why you would, my bitcoin address is
 BTC: 1JUqpvNvybHSaSsQEmK6hoH17jFv3VnFMa

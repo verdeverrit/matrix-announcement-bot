@@ -2,8 +2,6 @@
 
 # A bot that checks $announcement_room for posts with the :ok_hand: emoji
 # then relays that post to all users via the server announcement api call
-# `nohup announcement-bot &`
-# `pgrep announcement-bot | xargs kill -9`
 
 admin_user=''
 admin_password=''
@@ -46,6 +44,10 @@ sandstorm_by_darude() {
 	fi
 	rm sync.json
 }
+
+if [ ! -f ANNOUNCEMENTLOG ]; then
+	touch ANNOUNCEMENTLOG
+fi
 
 while true; do
 	authenticate
