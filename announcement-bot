@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# A bot that checks $announcement_room for posts with the :ok_hand: emoji
+# then relays that post to all users via the server announcement api call
+# `nohup announcement-bot &`
+# `pgrep announcement-bot | xargs kill -9`
+
+admin_user=''
+admin_password=''
+base_url=''
+announcement_room=''
+
+authenticate(){
+	checkauth=$(curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' ''"$base_url"'/_matrix/client/r0/admin/whois/'"$admin_user"'' | jq -r .error | cat)
+	if [[ $checkauth != "null" ]]; then
+		response=$(curl --silent -X POST --header 'Content-Type: application/json' --data '{"type":"m.login.password", "user":"'$admin_user'", "password":"'$admin_password'"}' ''"$base_url"'/_matrix/client/r0/login')
+		apikey=$(echo $response | jq -r .access_token)
+	fi
+}
+
+send_announcement() {
+	readarray -t users < <( curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' ''"$base_url"'/_synapse/admin/v2/users?from=0&limit=10000&guests=true' | jq .users[].name | sed 's/"//g' )
+	count=$(curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' ''"$base_url"'/_synapse/admin/v2/users?from=0&limit=10000&guests=true' | jq .total)
+	for user in ${users[@]}; do 
+		curl --silent -X POST --header 'Authorization: Bearer '"$apikey"'' --header 'Content-Type: application/json' --header 'Accept: application/json' --data '{"user_id":"'$admin_user'","content":{"msgtype":"m.text","body":"'"$content"'"}}' ''"$base_url"'/_synapse/admin/v1/send_server_notice'  > /dev/null 2>&1
+	done
+}
+
+sandstorm_by_darude() {
+	curl --silent -X GET --header 'Authorization: Bearer '"$apikey"'' --header 'Accept: application/json' ''"$base_url"'/_matrix/client/r0/sync' | jq  '.rooms.join.'"$announcement_room"'.timeline' | jq '.events[] | select((.type=="m.room.message") or (.type=="m.reaction")) |  [{sender:.sender,content:.content.body,relation:.content."m.relates_to".event_id,rel_type:.content."m.relates_to".rel_type,key:.content."m.relates_to".key,id:.event_id,age:.unsigned.age}]' | jq '[.[] | . as $a | [keys[] | select($a[.] != null) | {(.): $a[.]}] | add]' | jq -s '.' > sync.json
+	msgcount=0
+	for line in `cat sync.json | jq '.[][] | select((.rel_type=="m.annotation") and (.key=="👌")) | [{"key":.key,"relation":.relation,"id":.id}]' | jq '.[]' | jq -s '.' | jq 'unique_by(.relation) | .[].relation' | sed 's/"//g'`; do
+		let "msgcount=msgcount+1"
+		grep -Fxq $line ANNOUNCEMENTLOG
+		if [ $? -eq 1 ]; then
+			echo $line >> ANNOUNCEMENTLOG
+			cat sync.json | jq --arg msgid $line '.[][] | select(.id==$msgid)' >> messages.json
+		fi
+	done
+	if [ -f messages.json ]; then 
+		cat messages.json | jq .content | sed 's/^.//; s/.$//' > send
+		cat send | while read content; do
+			send_announcement
+		done
+		rm messages.json send
+	fi
+	rm sync.json
+}
+
+while true; do
+	authenticate
+	sandstorm_by_darude
+	sleep 60
+done
